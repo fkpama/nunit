@@ -128,10 +128,12 @@ namespace NUnit.Framework.Internal.Commands
                 }
                 else
                 {
+                    var msg = $"Test exceeded Timeout value {_timeout}ms.";
                     context.CurrentResult.SetResult(new ResultState(
                         TestStatus.Failed,
-                        $"Test exceeded Timeout value {_timeout}ms.",
-                        FailureSite.Test));
+                        msg,
+                        FailureSite.Test),
+                        msg);
                 }
             }
             catch (Exception exception)
