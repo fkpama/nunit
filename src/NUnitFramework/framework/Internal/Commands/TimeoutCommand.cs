@@ -155,14 +155,16 @@ namespace NUnit.Framework.Internal.Commands
             var task = new TaskCompletionSource<TestResult>();
             thread = new Thread(() =>
             {
+                TestResult result = null;
                 try
                 {
-                    var result = innerCommand.Execute(context);
+                    result = innerCommand.Execute(context);
                     task.TrySetResult(result);
                 }
-                finally
+                catch(Exception ex)
                 {
-                    task.TrySetResult(null);
+                    context.CurrentResult.RecordException(ex);
+                    task.TrySetResult(context.CurrentResult);
                 }
             });
             thread.Start();

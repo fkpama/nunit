@@ -79,15 +79,14 @@ namespace NUnit.Framework.Internal.Execution
                 // context values should not flow from a particular test case into the shared one-time teardown.
                 Result = ContextUtils.DoIsolated(() =>
                 {
+                    var result = (Context.CurrentResult ??= Context.CurrentTest.MakeTestResult());
                     testCommand.OnBeforeTest(Context);
-                    TestResult result = null;
                     try
                     {
                         result = testCommand.Execute(Context);
                     }
                     catch(Exception ex2)
                     {
-                        result = (Context.CurrentResult ??= Context.CurrentTest.MakeTestResult());
                         result.RecordException(ex2);
                     }
                     testCommand.OnAfterTest(Context);
