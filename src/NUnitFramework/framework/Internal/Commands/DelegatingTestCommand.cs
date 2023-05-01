@@ -68,5 +68,17 @@ namespace NUnit.Framework.Internal.Commands
                 context.CurrentResult.RecordException(ex);
             }
         }
+
+        internal override void OnBeforeTest(TestExecutionContext context)
+        {
+            base.OnBeforeTest(context);
+            this.innerCommand?.OnBeforeTest(context);
+        }
+
+        internal override void OnAfterTest(TestExecutionContext context)
+        {
+            base.OnAfterTest(context);
+            this.innerCommand?.OnAfterTest(context);
+        }
     }
 }

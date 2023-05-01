@@ -49,21 +49,33 @@ namespace NUnit.Framework.Internal.Commands
             Guard.OperationValid(BeforeTest != null, "BeforeTest was not set by the derived class constructor");
             Guard.OperationValid(AfterTest != null, "AfterTest was not set by the derived class constructor");
 
+            RunTestMethodInThreadAbortSafeZone(context, () =>
+            {
+                context.CurrentResult = innerCommand.Execute(context);
+            });
+            return context.CurrentResult;
+        }
+
+        internal override void OnBeforeTest(TestExecutionContext context)
+        {
             if (Test.Fixture == null)
                 Test.Fixture = context.TestObject;
 
+            base.OnBeforeTest(context);
             RunTestMethodInThreadAbortSafeZone(context, () =>
             {
                 BeforeTest(context);
-                context.CurrentResult = innerCommand.Execute(context);
             });
+        }
 
+        internal override void OnAfterTest(TestExecutionContext context)
+        {
+            base.OnAfterTest(context);
             if (context.ExecutionStatus != TestExecutionStatus.AbortRequested)
             {
                 RunTestMethodInThreadAbortSafeZone(context, () => { AfterTest(context); });
             }
 
-            return context.CurrentResult;
         }
 
         /// <summary>

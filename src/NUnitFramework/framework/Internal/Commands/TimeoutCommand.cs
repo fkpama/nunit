@@ -120,7 +120,7 @@ namespace NUnit.Framework.Internal.Commands
         {
             try
             {
-                var testExecution = RunTestOnSeparateThread(context);
+                var testExecution = RunTestOnSeparateThread(context, out var thread);
                 if (Task.WaitAny(new Task[] { testExecution }, _timeout) != -1
                     || _debugger.IsAttached)
                 {
@@ -128,12 +128,18 @@ namespace NUnit.Framework.Internal.Commands
                 }
                 else
                 {
+                    thread.Interrupt();
+                    if (!thread.Join(60000))
+                    {
+                        throw new NotImplementedException();
+                    }
                     var msg = $"Test exceeded Timeout value {_timeout}ms.";
                     context.CurrentResult.SetResult(new ResultState(
                         TestStatus.Failed,
                         msg,
                         FailureSite.Test),
                         msg);
+                    context.ExecutionStatus = TestExecutionStatus.StopRequested;
                 }
             }
             catch (Exception exception)
@@ -144,9 +150,23 @@ namespace NUnit.Framework.Internal.Commands
             return context.CurrentResult;
         }
 
-        private Task<TestResult> RunTestOnSeparateThread(TestExecutionContext context)
+        private Task<TestResult> RunTestOnSeparateThread(TestExecutionContext context, out Thread thread)
         {
-            return Task.Run(() => innerCommand.Execute(context));
+            var task = new TaskCompletionSource<TestResult>();
+            thread = new Thread(() =>
+            {
+                try
+                {
+                    var result = innerCommand.Execute(context);
+                    task.TrySetResult(result);
+                }
+                finally
+                {
+                    task.TrySetResult(null);
+                }
+            });
+            thread.Start();
+            return task.Task;
         }
 #endif
     }

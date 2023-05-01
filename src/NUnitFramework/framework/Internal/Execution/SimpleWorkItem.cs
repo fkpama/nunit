@@ -22,6 +22,7 @@
 // ***********************************************************************
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal.Abstractions;
@@ -76,7 +77,22 @@ namespace NUnit.Framework.Internal.Execution
 
                 // Isolate the Execute call because the WorkItemComplete below will run one-time teardowns. Execution
                 // context values should not flow from a particular test case into the shared one-time teardown.
-                Result = ContextUtils.DoIsolated(() => testCommand.Execute(Context));
+                Result = ContextUtils.DoIsolated(() =>
+                {
+                    testCommand.OnBeforeTest(Context);
+                    TestResult result = null;
+                    try
+                    {
+                        result = testCommand.Execute(Context);
+                    }
+                    catch(Exception ex2)
+                    {
+                        result = (Context.CurrentResult ??= Context.CurrentTest.MakeTestResult());
+                        result.RecordException(ex2);
+                    }
+                    testCommand.OnAfterTest(Context);
+                    return result;
+                });
             }
             catch (Exception ex)
             {
